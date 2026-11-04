@@ -90,6 +90,21 @@ def _ros_stack(context):
             mappings={"name": "ur"},
         )
         .trajectory_execution(file_path=moveit_controllers)
+
+        # ROS 2 Humble compatibility:
+        # By default, MoveIt automatically discovers planning pipelines,
+        # including Pilz, which requires a missing Cartesian limits file.
+        #
+        # Explicitly select OMPL so only its configuration is loaded.
+        .planning_pipelines(
+            pipelines=["ompl"],
+            default_planning_pipeline="ompl",
+        )
+
+        # Original:
+        # .to_moveit_configs()  # Previously called without selecting a planner.
+        #
+        # Keep this call to generate the MoveIt configuration.
         .to_moveit_configs()
     )
 
@@ -133,6 +148,21 @@ def _ros_stack(context):
             output="screen",
             parameters=[
                 moveit_config.to_dict(),
+                os.path.join(
+		get_package_share_directory("ur_moveit_config"),
+		"config",
+		"kinematics.yaml",
+	    ),                
+                {"ompl.planning_plugin": "ompl_interface/OMPLPlanner"},
+                {
+		    "ompl.request_adapters":
+			"default_planner_request_adapters/AddTimeOptimalParameterization "
+			"default_planner_request_adapters/FixWorkspaceBounds "
+			"default_planner_request_adapters/FixStartStateBounds "
+			"default_planner_request_adapters/FixStartStateCollision "
+			"default_planner_request_adapters/FixStartStatePathConstraints",
+		},
+
                 {
                     "use_sim_time": use_sim_time,
                     "publish_robot_description_semantic": True,

@@ -3,7 +3,9 @@
   <!-- Official UR arm, with ros2_control swapped to the Isaac joint-topic bridge. -->
   <xacro:arg name="name" default="ur"/>
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
-  <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro"/>
+  <!-- Humble compatibility: Use the local copy of the official UR joint-control Xacro. -->
+  <!-- <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro"/> -->
+  <xacro:include filename="ur_joint_control.xacro"/>
 
   <xacro:arg name="ur_type" default="ur5e"/>
   <xacro:arg name="tf_prefix" default=""/>
@@ -23,9 +25,12 @@
   <xacro:property name="initial_positions_file" default="$(arg initial_positions_file)"/>
 
   <link name="world"/>
-
+  
+  <!-- Disable default ros2_control to use DataraAI's topic-based controller. -->
+  <!-- Humble compatibility: Removed unsupported force_abs_paths and smart_panel parameters. -->
   <xacro:ur_robot
     name="$(arg name)"
+    generate_ros2_control_tag="false" 
     tf_prefix="$(arg tf_prefix)"
     parent="world"
     joint_limits_parameters_file="$(arg joint_limit_params)"
@@ -34,9 +39,7 @@
     visual_parameters_file="$(arg visual_params)"
     safety_limits="$(arg safety_limits)"
     safety_pos_margin="$(arg safety_pos_margin)"
-    safety_k_position="$(arg safety_k_position)"
-    force_abs_paths="$(arg force_abs_paths)"
-    smart_panel="$(arg smart_panel)">
+    safety_k_position="$(arg safety_k_position)">
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:ur_robot>
 
@@ -53,4 +56,25 @@
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${xacro.load_yaml(initial_positions_file)}"/>
   </ros2_control>
+  
+    <!-- Problem 1: Wrist camera TF frames -->
+
+  <!-- Mount camera 5 cm from tool0 -->
+  <link name="camera_link"/>
+
+  <joint name="camera_mount_joint" type="fixed">
+    <parent link="tool0"/>
+    <child link="camera_link"/>
+    <origin xyz="0 0 0.05" rpy="0 ${-pi/2} 0"/>
+  </joint>
+
+  <!-- ROS optical frame: Z forward, X right, Y down -->
+  <link name="camera_optical_frame"/>
+
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+  
 </robot>

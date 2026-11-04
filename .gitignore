@@ -18,3 +18,7 @@ ros2_ws/log/
 
 # Runtime logs
 *.log
+
+# Local backup files
+*.backup
+*.bak
